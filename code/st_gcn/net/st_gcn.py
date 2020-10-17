@@ -6,7 +6,7 @@ import numpy as np
 import math
 import tqdm
 from .temporal_transformer_windowed import tcn_unit_attention_block
-from .temporal_transformer import tcn_unit_attention
+from .temporal_transformer import TCNUnitAttention
 
 from .gcn_attention import gcn_unit_attention
 from .net import Unit2D, conv_init, import_class
@@ -382,17 +382,17 @@ class TCN_GCN_unit(nn.Module):
                                                      visualization=self.visualization, dim_block1=dim_block1,
                                                      dim_block2=dim_block2, dim_block3=dim_block3, num_point=self.num_point)
             else:
-                self.tcn1 = tcn_unit_attention(out_channel, out_channel, dv_factor=dv,
-                                               dk_factor=dk, Nh=Nh,
-                                               relative=relative, only_temporal_attention=only_temporal_attention,
-                                               dropout=dropout,
-                                               kernel_size_temporal=9, stride=stride,
-                                               weight_matrix=weight_matrix, bn_flag=True, last=self.last,
-                                               layer=layer,
-                                               device=self.device, more_channels=self.more_channels,
-                                               drop_connect=self.drop_connect, n=num,
-                                               data_normalization=self.data_normalization, skip_conn=self.skip_conn,
-                                               visualization=self.visualization, num_point=self.num_point)
+                self.tcn1 = TCNUnitAttention(out_channel, out_channel, dv_factor=dv,
+                                             dk_factor=dk, Nh=Nh,
+                                             relative=relative, only_temporal_attention=only_temporal_attention,
+                                             dropout=dropout,
+                                             kernel_size_temporal=9, stride=stride,
+                                             weight_matrix=weight_matrix, bn_flag=True, last=self.last,
+                                             layer=layer,
+                                             device=self.device, more_channels=self.more_channels,
+                                             drop_connect=self.drop_connect, n=num,
+                                             data_normalization=self.data_normalization, skip_conn=self.skip_conn,
+                                             visualization=self.visualization, num_point=self.num_point)
 
 
 

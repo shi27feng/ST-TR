@@ -1,3 +1,5 @@
+from abc import ABC
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F_func
@@ -18,13 +20,13 @@ Function adapted from: https://github.com/leaderj1001/Attention-Augmented-Conv2d
 '''
 
 
-class tcn_unit_attention(nn.Module):
+class TCNUnitAttention(nn.Module, ABC):
     def __init__(self, in_channels, out_channels, dv_factor, dk_factor, Nh, n,
                  relative, only_temporal_attention, dropout, kernel_size_temporal, stride, weight_matrix,
                  last, layer, device, more_channels, drop_connect, num_point,
                  bn_flag=True,
                  shape=25, visualization=False, data_normalization=True, skip_conn=True, more_relative=False):
-        super(tcn_unit_attention, self).__init__()
+        super(TCNUnitAttention, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.layer = layer
@@ -54,7 +56,7 @@ class tcn_unit_attention(nn.Module):
             self.dv = int(dv_factor * out_channels)
         else:
             self.dv = out_channels
-        if ((self.in_channels != self.out_channels) or (stride != 1)):
+        if (self.in_channels != self.out_channels) or (stride != 1):
             self.down = Unit2D(
                 self.in_channels, self.out_channels, kernel_size=1, stride=stride)
         else:
