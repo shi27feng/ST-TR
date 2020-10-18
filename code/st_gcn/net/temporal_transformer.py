@@ -99,23 +99,13 @@ class TCNUnitAttention(nn.Module, ABC):
                                   padding=(0, int((1 - 1) / 2)))
         self.attn_out = nn.Conv2d(self.dv * factor_dim, self.dv, kernel_size=1, stride=1)
 
-        if self.out_channels == 64:
-            frames = 300
-
-        if self.out_channels == 128:
-            frames = 150
-
-        if self.out_channels == 256:
-            frames = 75
+        frames = int(25 * 12 * 64 / self.out_channels)
 
         if self.relative:
-            if self.more_channels:
-                self.key_rel = nn.Parameter(
-                    torch.randn((2 * frames - 1, self.dk // self.num), requires_grad=True))
-
-            else:
-                self.key_rel = nn.Parameter(
-                    torch.randn((2 * frames - 1, self.dk // Nh), requires_grad=True))
+            factor_dim = self.num if self.more_channels else Nh
+            self.key_rel = nn.Parameter(
+                torch.randn((2 * frames - 1, self.dk // factor_dim),
+                            requires_grad=True))
 
         assert self.Nh != 0, "integer division or modulo by zero, Nh >= 1"
         assert self.dk % self.Nh == 0, "dk should be divided by Nh. (example: out_channels: 20, dk: 40, Nh: 4)"
@@ -169,7 +159,7 @@ class TCNUnitAttention(nn.Module, ABC):
             weights = fn.softmax(logits, dim=-1)
 
         if self.drop_connect and self.training:
-            mask = torch.bernoulli((0.5) * torch.ones(B * self.Nh * T, device=device))
+            mask = torch.bernoulli(0.5 * torch.ones(B * self.Nh * T, device=device))
             mask = mask.reshape(B, self.Nh, T).unsqueeze(2).expand(B, self.Nh, T, T)
             weights = weights * mask
             weights = weights / (weights.sum(3, keepdim=True) + 1e-8)

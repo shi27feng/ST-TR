@@ -1,15 +1,12 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
-import numpy as np
 import math
+from abc import ABC
+import torch.nn as nn
 
 
-class Unit2D(nn.Module):
+class Unit2D(nn.Module, ABC):
     def __init__(self,
-                 D_in,
-                 D_out,
+                 dim_in,
+                 dim_out,
                  kernel_size,
                  stride=1,
                  dim=2,
@@ -21,8 +18,8 @@ class Unit2D(nn.Module):
 
         if dim == 2:
             self.conv = nn.Conv2d(
-                D_in,
-                D_out,
+                dim_in,
+                dim_out,
                 kernel_size=(kernel_size, 1),
                 padding=(pad, 0),
                 stride=(stride, 1),
@@ -30,8 +27,8 @@ class Unit2D(nn.Module):
         elif dim == 3:
             print("Pad Temporal ", pad)
             self.conv = nn.Conv2d(
-                D_in,
-                D_out,
+                dim_in,
+                dim_out,
                 kernel_size=(1, kernel_size),
                 padding=(0, pad),
                 stride=(1, stride),
@@ -39,7 +36,7 @@ class Unit2D(nn.Module):
         else:
             raise ValueError()
 
-        self.bn = nn.BatchNorm2d(D_out)
+        self.bn = nn.BatchNorm2d(dim_out)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout, inplace=True)
 

@@ -24,8 +24,7 @@ class UnitGCN(nn.Module, ABC):
         self.V = A.size()[-1]
 
         # the adjacency matrixes of the graph
-        self.A = Variable(
-            A.clone(), requires_grad=False).view(-1, self.V, self.V)
+        self.A = Variable(A.clone(), requires_grad=False).view(-1, self.V, self.V)
 
         # number of input channels
         self.in_channels = in_channels
@@ -73,7 +72,7 @@ class UnitGCN(nn.Module, ABC):
 
         # reweight adjacency matrix
         if self.mask_learning:
-            A *=  self.mask
+            A *= self.mask
 
         # graph convolution
         for i, a in enumerate(A):
@@ -82,7 +81,7 @@ class UnitGCN(nn.Module, ABC):
             if i == 0:
                 y = self.conv_list[i](xa)
             else:
-                y +=  self.conv_list[i](xa)
+                y += self.conv_list[i](xa)
 
         # batch normalization
         if self.use_local_bn:
@@ -93,7 +92,7 @@ class UnitGCN(nn.Module, ABC):
         else:
             y = self.bn(y)
 
-        # nonliner
+        # nonlinear
         y = self.relu(y)
 
         return y
