@@ -11,8 +11,9 @@ from torch.autograd import Variable
 
 '''
 This class implements Adaptive Graph Convolution. 
-Function adapted from "Two-Stream Adaptive Graph Convolutional Networks for Skeleton Action Recognition" of Shi. et al. ("https://github.com/lshiwjx/2s-AGCN")
-
+Function adapted from "Two-Stream Adaptive Graph Convolutional Networks 
+for Skeleton Action Recognition" of 
+Shi. et al. ("https://github.com/lshiwjx/2s-AGCN")
 '''
 
 
@@ -47,8 +48,8 @@ class UnitGCN(nn.Module, ABC):
         super(UnitGCN, self).__init__()
         inter_channels = out_channels // coff_embedding
         self.inter_c = inter_channels
-        self.PA = nn.Parameter(adj)
-        nn.init.constant_(self.PA, 1e-6)
+        self.param_adj = nn.Parameter(adj)
+        nn.init.constant_(self.param_adj, 1e-6)
         self.A = Variable(adj, requires_grad=False)
         print(type(self.A))
         self.num_subset = num_subset
@@ -85,7 +86,7 @@ class UnitGCN(nn.Module, ABC):
     def forward(self, x, label, name):
         N, C, T, V = x.size()
         adj = self.A.cuda(x.get_device())
-        adj = adj + self.PA
+        adj = adj + self.param_adj
 
         y = None
         for i in range(self.num_subset):
