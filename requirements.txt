@@ -2,12 +2,12 @@
 conda-forge
 torch
 # dependencies:
-ignite==1.1.0
-networkx==2.3
-numpy==1.16.3
-scipy==1.2.1
-scikit-learn==0.20.3
-tensorboardX==1.6
+ignite
+networkx
+numpy
+scipy
+scikit-learn
+tensorboardX
 # tensorflow==1.13.1
 torchvision
 seaborn
