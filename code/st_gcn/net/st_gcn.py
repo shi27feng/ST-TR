@@ -10,7 +10,7 @@ from .temporal_transformer import TCNUnitAttention
 
 from .gcn_attention import gcn_unit_attention
 from .net import Unit2D, conv_init, import_class
-from .unit_agcn import unit_gcn
+from .unit_agcn import UnitGCN
 
 default_backbone_all_layers = [(3, 64, 1), (64, 64, 1), (64, 64, 1), (64, 64, 1), (64, 128,
                                                                                    2), (128, 128, 1),
@@ -223,7 +223,7 @@ class Model(nn.Module):
         # head
 
         if not all_layers:
-            self.gcn0 = unit_gcn(
+            self.gcn0 = UnitGCN(
                 channel,
                 backbone_in_c,
                 self.A,
@@ -358,7 +358,7 @@ class TCN_GCN_unit(nn.Module):
                                            visualization=self.visualization, num_point=self.num_point)
         else:
 
-            self.gcn1 = unit_gcn(
+            self.gcn1 = UnitGCN(
                 in_channel,
                 out_channel,
                 A,

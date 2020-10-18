@@ -1,16 +1,13 @@
 # The based unit of graph convolutional networks.
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
-from .net import conv_init
 import math
+from abc import ABC
 
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+
+# from .net import conv_init
 
 '''
 This class implements Adaptive Graph Convolution. 
@@ -38,15 +35,21 @@ def conv_branch_init(conv, branches):
     nn.init.constant_(conv.bias, 0)
 
 
-class unit_gcn(nn.Module):
-    def __init__(self, in_channels, out_channels, A, coff_embedding=4, num_subset=3, use_local_bn=False,
+class UnitGCN(nn.Module, ABC):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 adj,
+                 coff_embedding=4,
+                 num_subset=3,
+                 use_local_bn=False,
                  mask_learning=False):
-        super(unit_gcn, self).__init__()
+        super(UnitGCN, self).__init__()
         inter_channels = out_channels // coff_embedding
         self.inter_c = inter_channels
-        self.PA = nn.Parameter(A)
+        self.PA = nn.Parameter(adj)
         nn.init.constant_(self.PA, 1e-6)
-        self.A = Variable(A, requires_grad=False)
+        self.A = Variable(adj, requires_grad=False)
         print(type(self.A))
         self.num_subset = num_subset
 
@@ -81,17 +84,17 @@ class unit_gcn(nn.Module):
 
     def forward(self, x, label, name):
         N, C, T, V = x.size()
-        A = self.A.cuda(x.get_device())
-        A = A + self.PA
+        adj = self.A.cuda(x.get_device())
+        adj = adj + self.PA
 
         y = None
         for i in range(self.num_subset):
-            A1 = self.conv_a[i](x).permute(0, 3, 1, 2).contiguous().view(N, V, self.inter_c * T)
-            A2 = self.conv_b[i](x).view(N, self.inter_c * T, V)
-            A1 = self.soft(torch.matmul(A1, A2) / A1.size(-1))  # N V V
-            A1 = A1 + A[i]
-            A2 = x.view(N, C * T, V)
-            z = self.conv_d[i](torch.matmul(A2, A1).view(N, C, T, V))
+            adj_i = self.conv_a[i](x).permute(0, 3, 1, 2).contiguous().view(N, V, self.inter_c * T)
+            adj_j = self.conv_b[i](x).view(N, self.inter_c * T, V)
+            adj_i = self.soft(torch.matmul(adj_i, adj_j) / adj_i.size(-1))  # N V V
+            adj_i = adj_i + adj[i]
+            adj_j = x.view(N, C * T, V)
+            z = self.conv_d[i](torch.matmul(adj_j, adj_i).view(N, C, T, V))
             y = z + y if y is not None else z
 
         y = self.bn(y)

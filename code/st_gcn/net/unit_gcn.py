@@ -1,4 +1,5 @@
 # The based unit of graph convolutional networks.
+from abc import ABC
 
 import torch
 import torch.nn as nn
@@ -7,7 +8,7 @@ from torch.autograd import Variable
 from .net import conv_init
 
 
-class unit_gcn(nn.Module):
+class UnitGCN(nn.Module, ABC):
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -16,7 +17,7 @@ class unit_gcn(nn.Module):
                  kernel_size=1,
                  stride=1,
                  mask_learning=False):
-        super(unit_gcn, self).__init__()
+        super(UnitGCN, self).__init__()
 
         # ==========================================
         # number of nodes
