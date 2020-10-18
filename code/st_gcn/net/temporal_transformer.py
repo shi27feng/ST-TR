@@ -2,11 +2,9 @@ from abc import ABC
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F_func
+import torch.nn.functional as fn
+
 from .net import Unit2D
-import math
-import numpy as np
-import time
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -21,11 +19,31 @@ Function adapted from: https://github.com/leaderj1001/Attention-Augmented-Conv2d
 
 
 class TCNUnitAttention(nn.Module, ABC):
-    def __init__(self, in_channels, out_channels, dv_factor, dk_factor, Nh, n,
-                 relative, only_temporal_attention, dropout, kernel_size_temporal, stride, weight_matrix,
-                 last, layer, device, more_channels, drop_connect, num_point,
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 dv_factor,
+                 dk_factor,
+                 Nh,
+                 n,
+                 relative,
+                 only_temporal_attention,
+                 dropout,
+                 kernel_size_temporal,
+                 stride,
+                 weight_matrix,
+                 last,
+                 layer,
+                 device,
+                 more_channels,
+                 drop_connect,
+                 num_point,
                  bn_flag=True,
-                 shape=25, visualization=False, data_normalization=True, skip_conn=True, more_relative=False):
+                 shape=25,
+                 visualization=False,
+                 data_normalization=True,
+                 skip_conn=True,
+                 more_relative=False):
         super(TCNUnitAttention, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -52,13 +70,15 @@ class TCNUnitAttention(nn.Module, ABC):
         self.skip_conn = skip_conn
         self.last = last
 
-        if (not self.only_temporal_att):
+        if not self.only_temporal_att:
             self.dv = int(dv_factor * out_channels)
         else:
             self.dv = out_channels
         if (self.in_channels != self.out_channels) or (stride != 1):
-            self.down = Unit2D(
-                self.in_channels, self.out_channels, kernel_size=1, stride=stride)
+            self.down = Unit2D(self.in_channels,
+                               self.out_channels,
+                               kernel_size=1,
+                               stride=stride)
         else:
             self.down = None
         if self.data_normalization:
@@ -67,24 +87,17 @@ class TCNUnitAttention(nn.Module, ABC):
             self.dropout = nn.Dropout(0.25)
 
         # Temporal convolution
-        if (not self.only_temporal_att):
+        if not self.only_temporal_att:
             self.tcn_conv = Unit2D(in_channels, out_channels - self.dv, dropout=dropout,
                                    kernel_size=kernel_size_temporal,
                                    stride=self.stride)
-        if (self.more_channels):
-
-            self.qkv_conv = nn.Conv2d(self.in_channels, (2 * self.dk + self.dv) * self.Nh // self.num,
-                                      kernel_size=(1, stride),
-                                      stride=(1, stride),
-                                      padding=(0, int((1 - 1) / 2)))
-        else:
-            self.qkv_conv = nn.Conv2d(self.in_channels, 2 * self.dk + self.dv, kernel_size=(1, stride),
-                                      stride=(1, stride),
-                                      padding=(0, int((1 - 1) / 2)))
-        if (self.more_channels):
-            self.attn_out = nn.Conv2d(self.dv * self.Nh // self.num, self.dv, kernel_size=1, stride=1)
-        else:
-            self.attn_out = nn.Conv2d(self.dv, self.dv, kernel_size=1, stride=1)
+        base_dim = 2 * self.dk + self.dv
+        factor_dim = self.Nh // self.num if self.more_channels else 1
+        self.qkv_conv = nn.Conv2d(self.in_channels, base_dim * factor_dim,
+                                  kernel_size=(1, stride),
+                                  stride=(1, stride),
+                                  padding=(0, int((1 - 1) / 2)))
+        self.attn_out = nn.Conv2d(self.dv * factor_dim, self.dv, kernel_size=1, stride=1)
 
         if self.out_channels == 64:
             frames = 300
@@ -114,7 +127,7 @@ class TCNUnitAttention(nn.Module, ABC):
         N, C, T, V = x.size()
         x_sum = x
 
-        if (self.data_normalization):
+        if self.data_normalization:
             x = x.permute(0, 1, 3, 2).reshape(N, C * V, T)
             x = self.data_bn(x)
             x = x.reshape(N, C, V, T).permute(0, 1, 3, 2)
@@ -132,11 +145,11 @@ class TCNUnitAttention(nn.Module, ABC):
         # Calculate the scores, obtained by doing q*k
         # (batch_size, Nh, time, dkh)*(batch_size, Nh,dkh, time) =  (batch_size, Nh, time, time)
 
-        if (multi_matmul):
+        if multi_matmul:
             for i in range(0, 5):
                 flat_q_5 = flat_q[:, :, :, (60 * i):(60 * (i + 1))]
                 product = torch.matmul(flat_q_5.transpose(2, 3), flat_k)
-                if (i == 0):
+                if i == 0:
                     logits = product
                 else:
                     logits = torch.cat((logits, product), dim=2)
@@ -150,12 +163,12 @@ class TCNUnitAttention(nn.Module, ABC):
         # Calculate weights
         if self.relative:
 
-            weights = F_func.softmax(logits_sum, dim=-1)
+            weights = fn.softmax(logits_sum, dim=-1)
 
         else:
-            weights = F_func.softmax(logits, dim=-1)
+            weights = fn.softmax(logits, dim=-1)
 
-        if (self.drop_connect and self.training):
+        if self.drop_connect and self.training:
             mask = torch.bernoulli((0.5) * torch.ones(B * self.Nh * T, device=device))
             mask = mask.reshape(B, self.Nh, T).unsqueeze(2).expand(B, self.Nh, T, T)
             weights = weights * mask
@@ -186,29 +199,26 @@ class TCNUnitAttention(nn.Module, ABC):
             if dropout:
                 attn_out = self.dropout(attn_out)
 
-                if (not self.only_temporal_att):
+                if not self.only_temporal_att:
                     x = self.tcn_conv(x_sum)
                     result = torch.cat((x, attn_out), dim=1)
                 else:
                     result = attn_out
 
                 result += (x_sum if (self.down is None) else self.down(x_sum))
-
 
             else:
-                if (not self.only_temporal_att):
+                if not self.only_temporal_att:
                     x = self.tcn_conv(x_sum)
                     result = torch.cat((x, attn_out), dim=1)
                 else:
                     result = attn_out
 
                 result += (x_sum if (self.down is None) else self.down(x_sum))
-
-
         else:
             result = attn_out
 
-        if (self.bn_flag):
+        if self.bn_flag:
             result = self.bn(result)
         result = self.relu(result)
         return result
@@ -283,7 +293,7 @@ class TCNUnitAttention(nn.Module, ABC):
         return final_x
 
 
-class ScaleNorm(nn.Module):
+class ScaleNorm(nn.Module, ABC):
     """ScaleNorm"""
 
     def __init__(self, scale, eps=1e-5):
