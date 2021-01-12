@@ -23,8 +23,8 @@ class spatial_attention(nn.Module):
         self.in_channels = in_channels
         self.complete = complete
         self.kernel_size = 1
-        self.dk = dk
-        self.dv = dv
+        self.dk = dk   # dimension of keys
+        self.dv = dv   # dimension of values
         self.num = num
         self.layer = layer
         self.more_channels = more_channels
@@ -33,8 +33,8 @@ class spatial_attention(nn.Module):
         self.data_normalization = data_normalization
         self.skip_conn = skip_conn
         self.adjacency = adjacency
-        self.Nh = Nh
-        self.num_point=num_point
+        self.Nh = Nh     # number of heads
+        self.num_point = num_point
         self.A = A[0] + A[1] + A[2]
         if self.adjacency:
             self.mask = nn.Parameter(torch.ones(self.A.size()))
@@ -49,22 +49,14 @@ class spatial_attention(nn.Module):
         assert self.dv % self.Nh == 0, "dv should be divided by Nh. (example: out_channels: 20, dv: 4, Nh: 4)"
         assert stride in [1, 2], str(stride) + " Up to 2 strides are allowed."
 
-
-        if (self.more_channels):
-
-            self.qkv_conv = nn.Conv2d(self.in_channels, (2 * self.dk + self.dv) * self.Nh // self.num,
-                                      kernel_size=self.kernel_size,
-                                      stride=stride,
-                                      padding=self.padding)
-        else:
-            self.qkv_conv = nn.Conv2d(self.in_channels, 2 * self.dk + self.dv, kernel_size=self.kernel_size,
-                                      stride=stride,
-                                      padding=self.padding)
-        if (self.more_channels):
-
-            self.attn_out = nn.Conv2d(self.dv * self.Nh // self.num, self.dv, kernel_size=1, stride=1)
-        else:
-            self.attn_out = nn.Conv2d(self.dv, self.dv, kernel_size=1, stride=1)
+        factor = 1 if not self.more_channels else self.Nh // self.num
+        out_channels = (2 * self.dk + self.dv) * factor
+        self.qkv_conv = nn.Conv2d(self.in_channels, out_channels,
+                                  kernel_size=self.kernel_size,
+                                  stride=stride,
+                                  padding=self.padding)
+        in_channels = self.dv * factor
+        self.attn_out = nn.Conv2d(in_channels, self.dv, kernel_size=1, stride=1)
 
         if self.relative:
             # Two parameters are initialized in order to implement relative positional encoding
