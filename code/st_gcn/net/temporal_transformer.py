@@ -24,7 +24,7 @@ class TCNUnitAttention(nn.Module, ABC):
                  out_channels,
                  dv_factor,
                  dk_factor,
-                 Nh,
+                 Nh,                              # number of heads
                  n,
                  relative,
                  only_temporal_attention,
