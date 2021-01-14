@@ -133,7 +133,7 @@ class TCNUnitAttention(nn.Module, ABC):
         B, self.Nh, C, T = flat_q.size()
 
         # Calculate the scores, obtained by doing q*k
-        # (batch_size, Nh, time, dkh)*(batch_size, Nh,dkh, time) =  (batch_size, Nh, time, time)
+        # (batch_size, Nh, time, dkh) * (batch_size, Nh, dkh, time) =  (batch_size, Nh, time, time)
 
         if multi_matmul:
             for i in range(0, 5):
